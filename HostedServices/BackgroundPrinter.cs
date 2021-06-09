@@ -9,27 +9,27 @@ namespace SimplzIAMOK.HostedServices
     {
         private readonly ILogger<BackgroundPrinter> logger;
         private int number = 0;
-        private Timer timer;
 
-        public BackgroundPrinter(ILogger<BackgroundPrinter> logger)
+        public BackgroundPrinter(ILogger<BackgroundPrinter> logger)//IOptions<OrderingBackgroundSettings> settings
         {
             this.logger = logger;
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken = new CancellationToken())
         {
-            timer = new Timer(o =>
+            while (!cancellationToken.IsCancellationRequested)
             {
                 Interlocked.Increment(ref number);
                 logger.LogInformation($"Worker printing number: {number}");
-            }, null, System.TimeSpan.Zero, System.TimeSpan.FromSeconds(5));
+                Task.Delay(System.TimeSpan.FromSeconds(5), cancellationToken)
+                    .Wait(cancellationToken);
+            }
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
             logger.LogInformation("Printing worker stopping");
-            timer?.Dispose();
             return Task.CompletedTask;
         }
     }
